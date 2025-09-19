@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'app.dart';
-// ignore: depend_on_referenced_packages
+import 'package:flutter_mobile_dev/app.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
-void main() {
-  final widgetBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetBinding);
-  FlutterNativeSplash.remove();
-  runApp(const MyApp());
+Future <void> main() async {
+final widgetBinding= WidgetsFlutterBinding.ensureInitialized();   
+FlutterNativeSplash.preserve(widgetsBinding: widgetBinding) ;
+await Future.delayed(const Duration(seconds: 1));
+FlutterNativeSplash.remove();
+  runApp(const ProviderScope(child: MyApp()));
 }
+
+
