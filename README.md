@@ -12,5 +12,5 @@ This project is for learning purposes, focusing on UI and state management using
 ## Getting Started
 1. Clone this repository  
    ```bash
-   git clone https://github.com/username/MaHabits.git
+   git clone https://github.com/FarellAlva/MaHabits.git
    cd MaHabits
