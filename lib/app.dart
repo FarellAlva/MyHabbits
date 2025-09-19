@@ -84,7 +84,7 @@ class MyApp extends StatelessWidget {
       title: 'MaHabits',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 10, 9, 93)),
         useMaterial3: true,
       ),
       home: const HomePage(),
@@ -177,11 +177,11 @@ class HabitItem extends ConsumerWidget {
           habit.name,
           style: TextStyle(
             decoration: habit.isCompleted ? TextDecoration.lineThrough : null,
-            color: habit.isCompleted ? Colors.grey[600] : null,
+            color: habit.isCompleted ? const Color.fromARGB(255, 117, 70, 70) : null,
           ),
         ),
         trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
+          icon: Icon(Icons.delete_outline, color: const Color.fromARGB(255, 0, 0, 0)),
           onPressed: () {
             ref.read(habitListProvider.notifier).removeHabit(habit);
           },
