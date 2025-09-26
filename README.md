@@ -13,4 +13,4 @@ This project is for learning purposes, focusing on UI and state management using
 1. Clone this repository  
    ```bash
    git clone https://github.com/FarellAlva/MaHabits.git
-   cd MaHabits
+   cd MyHabits
