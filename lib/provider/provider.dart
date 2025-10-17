@@ -1,50 +1,80 @@
-
+// provider/provider.dart
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import '../model/model.dart';
 
-// StateNotifier untuk mengelola daftar habit
-class HabitListNotifier extends StateNotifier<List<Habit>> {
-  HabitListNotifier()
-      : super([
-          Habit(name: 'Olahraga 30 Menit'),
-          Habit(name: 'Baca Buku 15 Halaman', isCompleted: true),
-          Habit(name: 'Minum 8 Gelas Air'),
-        ]);
-
-  void addHabit(String name) {
-    state = [...state, Habit(name: name)];
+class AsyncHabitNotifier extends AsyncNotifier<List<Habit>> {
+  
+  @override
+  Future<List<Habit>> build() async {
+   
+    await Future.delayed(const Duration(seconds: 2));
+    // Data awal
+    return [
+      Habit(name: 'Olahraga 30 Menit'),
+      Habit(name: 'Baca Buku 15 Halaman', isCompleted: true),
+      Habit(name: 'Minum 8 Gelas Air'),
+    ];
   }
 
-  void removeHabit(Habit habitToRemove) {
-    state = state.where((habit) => habit != habitToRemove).toList();
+  
+  Future<void> addHabit(String name) async {
+    final currentState = await future; 
+    state = const AsyncValue.loading(); 
+    
+    await Future.delayed(const Duration(milliseconds: 500));
+    state = AsyncValue.data([...currentState, Habit(name: name)]);
   }
 
-  void toggleHabit(Habit habitToToggle) {
-    state = [
-      for (final habit in state)
-        if (habit == habitToToggle)
+  // Menghapus habit
+  Future<void> removeHabit(String habitId) async {
+    final currentState = await future;
+    state = const AsyncValue.loading();
+    await Future.delayed(const Duration(milliseconds: 300));
+    state = AsyncValue.data(currentState.where((h) => h.id != habitId).toList());
+  }
+  
+  // Mengedit habit
+  Future<void> editHabit(String habitId, String newName) async {
+    final currentState = await future;
+    state = const AsyncValue.loading();
+    await Future.delayed(const Duration(milliseconds: 500));
+    state = AsyncValue.data([
+      for (final habit in currentState)
+        if (habit.id == habitId) habit.copyWith(name: newName) else habit,
+    ]);
+  }
+
+  // status selesai
+  Future<void> toggleHabit(String habitId) async {
+    final currentState = await future;
+  
+    state = AsyncValue.data([
+      for (final habit in currentState)
+        if (habit.id == habitId)
           habit.copyWith(isCompleted: !habit.isCompleted)
         else
           habit,
-    ];
+    ]);
   }
 }
 
-/// Provider untuk daftar habit (StateNotifierProvider)
-final habitListProvider = StateNotifierProvider<HabitListNotifier, List<Habit>>((ref) {
-  return HabitListNotifier();
-});
+/// Provider  daftar habit
+final habitListProvider =
+    AsyncNotifierProvider<AsyncHabitNotifier, List<Habit>>(
+        () => AsyncHabitNotifier());
 
-/// Provider untuk menghitung jumlah habit selesai (Derived State)
+/// Providerjumlah habit selesai (Derived State)
 final completedCountProvider = Provider<int>((ref) {
-  final habits = ref.watch(habitListProvider);
+
+  final habits = ref.watch(habitListProvider).value ?? [];
   return habits.where((habit) => habit.isCompleted).length;
 });
 
-/// Provider untuk menghitung progress (Derived State)
+/// Provider menghitung progress (Derived State)
 final progressProvider = Provider<double>((ref) {
-  final totalHabits = ref.watch(habitListProvider).length;
+  final habits = ref.watch(habitListProvider).value ?? [];
+  final totalHabits = habits.length;
   final completedHabits = ref.watch(completedCountProvider);
 
   if (totalHabits == 0) {
@@ -52,4 +82,3 @@ final progressProvider = Provider<double>((ref) {
   }
   return completedHabits / totalHabits;
 });
-
