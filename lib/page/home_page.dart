@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/model.dart';
 import '../provider/provider.dart';
+import '../service/thought_api_service.dart'; // Wajib
 import 'add_edit_habit_page.dart';
 
 /// Helper method untuk menampilkan SnackBar secara konsisten.
@@ -45,7 +46,22 @@ class HomePage extends ConsumerWidget {
         data: (habits) {
           return Column(
             children: [
-              // Header Progress
+              const ThoughtInputSection(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/thoughts');
+                    },
+                    icon: const Icon(Icons.message_sharp, size: 18),
+                    label: const Text('Lihat Pesan Global'),
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+
               Container(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -84,9 +100,7 @@ class HomePage extends ConsumerWidget {
 
           if (result != null && context.mounted) {
             final isError = result.startsWith('ERROR:');
-            final displayMessage = isError
-                ? result.substring(6)
-                : result;
+            final displayMessage = isError ? result.substring(6) : result;
 
             _showSnackBar(context, displayMessage, isError: isError);
           }
@@ -96,6 +110,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
+  // Helper untuk membangun daftar habit
   Widget _buildHabitList(
     BuildContext context,
     List<Habit> habits,
@@ -106,10 +121,10 @@ class HomePage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('lib/assets/done.png', width: 200), 
+            const Icon(Icons.check_circle, size: 100, color: Colors.green),
             const SizedBox(height: 24),
             Text(
-              'Kerja Bagus!',
+              'Kerja Bagus! ',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const Text('Semua kebiasaan hari ini telah selesai.'),
@@ -124,7 +139,7 @@ class HomePage extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 8, bottom: 80),
             itemCount: habits.length,
             itemBuilder: (context, index) {
-              return HabitItem(habit: habits[index]);
+              return HabitItem(habit: habits[index], homePageContext: context);
             },
           );
   }
@@ -132,7 +147,12 @@ class HomePage extends ConsumerWidget {
 
 class HabitItem extends ConsumerWidget {
   final Habit habit;
-  const HabitItem({super.key, required this.habit});
+  final BuildContext homePageContext;
+  const HabitItem({
+    super.key,
+    required this.habit,
+    required this.homePageContext,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -173,27 +193,32 @@ class HabitItem extends ConsumerWidget {
                   final isError = result.startsWith('ERROR:');
                   final displayMessage = isError ? result.substring(6) : result;
 
-                  _showSnackBar(context, displayMessage, isError: isError);
+                  _showSnackBar(
+                    homePageContext,
+                    displayMessage,
+                    isError: isError,
+                  );
                 }
               },
             ),
             IconButton(
               icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
-              onPressed: () => _showDeleteConfirmationDialog(context, ref, habit),
+              onPressed: () =>
+                  _showDeleteConfirmationDialog(context, ref, habit),
             ),
           ],
         ),
       ),
     );
   }
-void _showDeleteConfirmationDialog(
+
+  void _showDeleteConfirmationDialog(
     BuildContext context,
     WidgetRef ref,
     Habit habit,
   ) {
-   
-    final scaffoldContext = ScaffoldMessenger.of(context).context;
-    
+    final safeSnackBarContext = homePageContext;
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -211,21 +236,20 @@ void _showDeleteConfirmationDialog(
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // Tutup dialog konfirmasi
+                Navigator.of(dialogContext).pop();
 
-          
                 try {
                   await ref
                       .read(habitListProvider.notifier)
-                      .removeHabit(habit.id); 
+                      .removeHabit(habit.id);
 
                   _showSnackBar(
-                    scaffoldContext,
+                    safeSnackBarContext,
                     'Habit "${habit.name}" telah dihapus.',
                   );
                 } catch (e) {
                   _showSnackBar(
-                    scaffoldContext,
+                    safeSnackBarContext,
                     'Gagal menghapus habit: $e',
                     isError: true,
                   );
@@ -235,6 +259,136 @@ void _showDeleteConfirmationDialog(
           ],
         );
       },
+    );
+  }
+}
+
+class ThoughtInputSection extends ConsumerStatefulWidget {
+  const ThoughtInputSection({super.key});
+
+  @override
+  ConsumerState<ThoughtInputSection> createState() =>
+      _ThoughtInputSectionState();
+}
+
+class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
+  final TextEditingController _thoughtController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _thoughtController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitThought() async {
+    final thoughtText = _thoughtController.text.trim();
+    if (thoughtText.isEmpty) {
+      _showSnackBar(context, 'Post tidak boleh kosong.', isError: true);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final apiService = ref.read(thoughtApiServiceProvider);
+    final newEntry = ThoughtEntry(
+      thought: thoughtText,
+      timestamp: DateTime.now(),
+    );
+
+    try {
+      await apiService.saveThought(newEntry);
+      _thoughtController.clear();
+
+      // Memuat ulang riwayat pikiran di provider
+      ref.invalidate(thoughtListProvider);
+
+      if (mounted) {
+        _showSnackBar(context, 'Postingan berhasil dikirim! ');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar(context, 'Gagal terhubung ke API: $e', isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      // ---------------------------------------------
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Bagikan Pesan Unikmu Hari Ini',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _thoughtController,
+                  decoration: InputDecoration(
+                    labelText: 'Tuliskan pikiranmu...',
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                  ),
+                  maxLines: 1,
+                  enabled: !_isLoading,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _submitThought(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : ElevatedButton(
+                      onPressed: _submitThought,
+                      child: const Text('Kirim'),
+                    ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
