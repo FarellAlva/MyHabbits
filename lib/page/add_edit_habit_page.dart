@@ -1,4 +1,3 @@
-// page/add_edit_habit_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/model.dart';
@@ -31,7 +30,7 @@ class _AddEditHabitPageState extends ConsumerState<AddEditHabitPage> {
   }
 
   Future<void> _submit() async {
-    final habitName = _textController.text;
+    final habitName = _textController.text.trim();
     if (habitName.isEmpty) return;
 
     setState(() {
@@ -54,8 +53,8 @@ class _AddEditHabitPageState extends ConsumerState<AddEditHabitPage> {
       // Kirim pesan sukses saat menutup halaman
       if (mounted) Navigator.of(context).pop(successMessage);
     } catch (e) {
-      final errorMessage = 'Gagal menyimpan: $e';
-      // Kirim pesan error saat menutup halaman jika terjadi masalah
+      // Kirim pesan error dengan prefix 'ERROR:' agar HomePage bisa mengidentifikasinya
+      final errorMessage = 'ERROR: Gagal menyimpan habit: $e';
       if (mounted) Navigator.of(context).pop(errorMessage);
     } finally {
       if (mounted) {

@@ -27,13 +27,13 @@ class AsyncHabitNotifier extends AsyncNotifier<List<Habit>> {
   }
 
   // Menghapus habit
-  Future<void> removeHabit(String habitId) async {
+ Future<void> removeHabit(String habitId) async {
     final currentState = await future;
-    state = const AsyncValue.loading();
     await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Perbarui state langsung ke data baru
     state = AsyncValue.data(currentState.where((h) => h.id != habitId).toList());
   }
-  
   // Mengedit habit
   Future<void> editHabit(String habitId, String newName) async {
     final currentState = await future;

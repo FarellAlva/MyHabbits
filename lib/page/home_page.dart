@@ -1,4 +1,5 @@
-// page/home_page.dart
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/model.dart';
@@ -6,10 +7,25 @@ import '../provider/provider.dart';
 import 'add_edit_habit_page.dart';
 
 /// Helper method untuk menampilkan SnackBar secara konsisten.
-void _showSnackBar(BuildContext context, String message) {
-  // Menghapus SnackBar yang mungkin sedang tampil agar tidak tumpang tindih.
+void _showSnackBar(
+  BuildContext context,
+  String message, {
+  bool isError = false,
+}) {
   ScaffoldMessenger.of(context).removeCurrentSnackBar();
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+
+  final backgroundColor = isError
+      ? Colors.red.shade400
+      : Theme.of(context).colorScheme.primary;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: backgroundColor,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(milliseconds: 2500),
+    ),
+  );
 }
 
 class HomePage extends ConsumerWidget {
@@ -61,15 +77,18 @@ class HomePage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Menunggu hasil (pesan) dari halaman AddEditHabitPage
           final result = await Navigator.push<String?>(
             context,
             MaterialPageRoute(builder: (context) => const AddEditHabitPage()),
           );
 
-          // Jika ada pesan yang dikembalikan, tampilkan di SnackBar
           if (result != null && context.mounted) {
-            _showSnackBar(context, result);
+            final isError = result.startsWith('ERROR:');
+            final displayMessage = isError
+                ? result.substring(6)
+                : result;
+
+            _showSnackBar(context, displayMessage, isError: isError);
           }
         },
         child: const Icon(Icons.add),
@@ -87,10 +106,10 @@ class HomePage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('lib/assets/done.png', width: 200),
+            Image.asset('lib/assets/done.png', width: 200), 
             const SizedBox(height: 24),
             Text(
-              'Kerja Bagus! ✨',
+              'Kerja Bagus!',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const Text('Semua kebiasaan hari ini telah selesai.'),
@@ -151,26 +170,30 @@ class HabitItem extends ConsumerWidget {
                 );
 
                 if (result != null && context.mounted) {
-                  _showSnackBar(context, result);
+                  final isError = result.startsWith('ERROR:');
+                  final displayMessage = isError ? result.substring(6) : result;
+
+                  _showSnackBar(context, displayMessage, isError: isError);
                 }
               },
             ),
             IconButton(
               icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
-              onPressed: () =>
-                  _showDeleteConfirmationDialog(context, ref, habit),
+              onPressed: () => _showDeleteConfirmationDialog(context, ref, habit),
             ),
           ],
         ),
       ),
     );
   }
-
-  void _showDeleteConfirmationDialog(
+void _showDeleteConfirmationDialog(
     BuildContext context,
     WidgetRef ref,
     Habit habit,
   ) {
+   
+    final scaffoldContext = ScaffoldMessenger.of(context).context;
+    
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -188,15 +211,23 @@ class HabitItem extends ConsumerWidget {
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // Tutup dialog dulu
-                await ref
-                    .read(habitListProvider.notifier)
-                    .removeHabit(habit.id);
+                Navigator.of(dialogContext).pop(); // Tutup dialog konfirmasi
 
-                if (context.mounted) {
+          
+                try {
+                  await ref
+                      .read(habitListProvider.notifier)
+                      .removeHabit(habit.id); 
+
                   _showSnackBar(
-                    context,
+                    scaffoldContext,
                     'Habit "${habit.name}" telah dihapus.',
+                  );
+                } catch (e) {
+                  _showSnackBar(
+                    scaffoldContext,
+                    'Gagal menghapus habit: $e',
+                    isError: true,
                   );
                 }
               },
