@@ -1,10 +1,12 @@
+// page/home_page.dart
+
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/model.dart';
-import '../provider/provider.dart';
-import '../service/thought_api_service.dart'; // Wajib
+import '../provider/provider.dart'; // Impor ini untuk habitListNameProvider
+import '../service/thought_api_service.dart';
 import 'add_edit_habit_page.dart';
 
 /// Helper method untuk menampilkan SnackBar secara konsisten.
@@ -38,14 +40,23 @@ class HomePage extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
     final completedCount = ref.watch(completedCountProvider);
 
+    // --- PERUBAHAN DI SINI ---
+    // 1. Tonton provider nama list dari SharedPreferences
+    final listName = ref.watch(habitListNameProvider);
+    // ------------------------
+
     return Scaffold(
-      appBar: AppBar(title: const Text('MaHabits Tracker'), centerTitle: true),
+      // --- PERUBAHAN DI SINI ---
+      // 2. Gunakan listName di title
+      appBar: AppBar(title: Text(listName), centerTitle: true),
+      // ------------------------
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (habits) {
           return Column(
             children: [
+              // Bagian Input Pikiran (Thought)
               const ThoughtInputSection(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -62,6 +73,7 @@ class HomePage extends ConsumerWidget {
               ),
               const Divider(height: 1),
 
+              // Bagian Progress
               Container(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -72,10 +84,13 @@ class HomePage extends ConsumerWidget {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
+                    // Wrapped with ClipRRect to provide rounded corners
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 10,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -85,6 +100,7 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
               const Divider(height: 1),
+
               // Daftar Habit
               Expanded(child: _buildHabitList(context, habits, progress)),
             ],
@@ -93,11 +109,13 @@ class HomePage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          // Navigasi ke halaman tambah/edit
           final result = await Navigator.push<String?>(
             context,
             MaterialPageRoute(builder: (context) => const AddEditHabitPage()),
           );
 
+          // Tampilkan SnackBar berdasarkan hasil dari halaman AddEdit
           if (result != null && context.mounted) {
             final isError = result.startsWith('ERROR:');
             final displayMessage = isError ? result.substring(6) : result;
@@ -116,6 +134,7 @@ class HomePage extends ConsumerWidget {
     List<Habit> habits,
     double progress,
   ) {
+    // Tampilkan pesan "Selesai" jika semua habit selesai
     if (habits.isNotEmpty && progress == 1.0) {
       return Center(
         child: Column(
@@ -133,6 +152,7 @@ class HomePage extends ConsumerWidget {
       );
     }
 
+    // Tampilkan daftar habit atau pesan "kosong"
     return habits.isEmpty
         ? const Center(child: Text('Belum ada kebiasaan.'))
         : ListView.builder(
@@ -145,9 +165,11 @@ class HomePage extends ConsumerWidget {
   }
 }
 
+// --- WIDGET UNTUK SATU ITEM HABIT ---
 class HabitItem extends ConsumerWidget {
   final Habit habit;
-  final BuildContext homePageContext;
+  final BuildContext homePageContext; // Context dari HomePage untuk SnackBar
+
   const HabitItem({
     super.key,
     required this.habit,
@@ -166,6 +188,7 @@ class HabitItem extends ConsumerWidget {
         leading: Checkbox(
           value: habit.isCompleted,
           onChanged: (value) {
+            // Toggle status selesai
             ref.read(habitListProvider.notifier).toggleHabit(habit.id);
           },
         ),
@@ -179,6 +202,7 @@ class HabitItem extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Tombol Edit
             IconButton(
               icon: Icon(Icons.edit_outlined, color: Colors.blue.shade300),
               onPressed: () async {
@@ -189,6 +213,7 @@ class HabitItem extends ConsumerWidget {
                   ),
                 );
 
+                // Tampilkan SnackBar dari context HomePage
                 if (result != null && context.mounted) {
                   final isError = result.startsWith('ERROR:');
                   final displayMessage = isError ? result.substring(6) : result;
@@ -201,6 +226,7 @@ class HabitItem extends ConsumerWidget {
                 }
               },
             ),
+            // Tombol Delete
             IconButton(
               icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
               onPressed: () =>
@@ -212,11 +238,13 @@ class HabitItem extends ConsumerWidget {
     );
   }
 
+  // Dialog konfirmasi penghapusan
   void _showDeleteConfirmationDialog(
     BuildContext context,
     WidgetRef ref,
     Habit habit,
   ) {
+    // Gunakan context HomePage untuk SnackBar agar aman
     final safeSnackBarContext = homePageContext;
 
     showDialog(
@@ -236,9 +264,10 @@ class HabitItem extends ConsumerWidget {
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
               onPressed: () async {
-                Navigator.of(dialogContext).pop();
+                Navigator.of(dialogContext).pop(); // Tutup dialog
 
                 try {
+                  // Panggil notifier untuk menghapus
                   await ref
                       .read(habitListProvider.notifier)
                       .removeHabit(habit.id);
@@ -263,6 +292,7 @@ class HabitItem extends ConsumerWidget {
   }
 }
 
+// --- WIDGET UNTUK INPUT PIKIRAN (THOUGHT) ---
 class ThoughtInputSection extends ConsumerStatefulWidget {
   const ThoughtInputSection({super.key});
 
@@ -281,6 +311,7 @@ class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
     super.dispose();
   }
 
+  // Fungsi untuk mengirim pikiran ke API
   Future<void> _submitThought() async {
     final thoughtText = _thoughtController.text.trim();
     if (thoughtText.isEmpty) {
@@ -302,7 +333,7 @@ class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
       await apiService.saveThought(newEntry);
       _thoughtController.clear();
 
-      // Memuat ulang riwayat pikiran di provider
+      // Penting: Muat ulang data di provider riwayat pikiran
       ref.invalidate(thoughtListProvider);
 
       if (mounted) {
@@ -326,7 +357,6 @@ class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(12),
-
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -342,7 +372,6 @@ class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
           ),
         ],
       ),
-      // ---------------------------------------------
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -362,7 +391,6 @@ class _ThoughtInputSectionState extends ConsumerState<ThoughtInputSection> {
                     labelText: 'Tuliskan pikiranmu...',
                     border: const OutlineInputBorder(),
                     isDense: true,
-
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 8,

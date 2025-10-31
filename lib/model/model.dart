@@ -1,23 +1,49 @@
 // model/model.dart
+
 import 'package:uuid/uuid.dart';
 
-const uuid = Uuid();
-
+// Model untuk Habit
 class Habit {
   final String id;
   final String name;
   final bool isCompleted;
 
-  Habit({required this.name, this.isCompleted = false, String? id})
-    : id = id ?? uuid.v4();
+  Habit({
+    String? id,
+    required this.name,
+    this.isCompleted = false,
+  }) : id = id ?? const Uuid().v4(); // Generate ID unik jika tidak disediakan
 
-  Habit copyWith({String? id, String? name, bool? isCompleted}) {
+  Habit copyWith({
+    String? id,
+    String? name,
+    bool? isCompleted,
+  }) {
     return Habit(
       id: id ?? this.id,
       name: name ?? this.name,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'isCompleted': isCompleted ? 1 : 0, // SQLite tidak punya bool, simpan 1 (true) / 0 (false)
+    };
+  }
+
+  /// Konversi Map dari DB kembali ke objek Habit.
+  factory Habit.fromMap(Map<String, dynamic> map) {
+    return Habit(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      isCompleted: map['isCompleted'] == 1, // Konversi 1/0 kembali ke true/false
+    );
+  }
+
+  // --- AKHIR TAMBAHAN ---
 }
 
 class ThoughtEntry {
@@ -25,26 +51,26 @@ class ThoughtEntry {
   final String thought;
   final DateTime timestamp;
 
-  ThoughtEntry({String? id, required this.thought, required this.timestamp})
-    : id = id ?? uuid.v4();
+  ThoughtEntry({
+    String? id,
+    required this.thought,
+    required this.timestamp,
+  }) : id = id ?? const Uuid().v4();
 
-  // Saat POST ke Supabase, kirim hanya data yang diperlukan.
+  // Konversi ke JSON untuk dikirim ke Supabase
   Map<String, dynamic> toJson() {
     return {
       'thought': thought,
-      // HAPUS BARIS INI: 'timestamp': timestamp.toIso8601String(),
+      'created_at': timestamp.toIso8601String(),
     };
   }
 
-  // Saat GET dari Supabase, ambil created_at yang dikembalikan oleh DB.
+  // Konversi dari JSON yang diterima dari Supabase
   factory ThoughtEntry.fromJson(Map<String, dynamic> json) {
     return ThoughtEntry(
-      id: json['id'] != null ? json['id'].toString() : uuid.v4(),
-      thought: json['thought'] ?? 'No Thought',
-      // MENGGUNAKAN 'created_at' DARI SUPABASE DULU
-      timestamp:
-          DateTime.tryParse(json['created_at'] ?? json['timestamp'] ?? '') ??
-          DateTime.now(),
+      id: json['id']?.toString() ?? const Uuid().v4(),
+      thought: json['thought'] as String,
+      timestamp: DateTime.parse(json['created_at'] as String),
     );
   }
 }

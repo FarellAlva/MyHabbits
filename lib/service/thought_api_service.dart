@@ -7,8 +7,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../model/model.dart';
 
-final String _baseUrl = dotenv.env['SUPABASE_URL'] ?? 'https://fallback-url.com'; 
-final String _anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? 'fallback_anon_key'; 
+final String? _baseUrl = dotenv.env['SUPABASE_URL']; 
+final String? _anonKey = dotenv.env['SUPABASE_ANON_KEY']; 
 
 
 final String _supabaseUrl = '$_baseUrl/rest/v1/thought_entries'; 
@@ -24,7 +24,7 @@ class ThoughtApiService {
       uri,
       headers: {
         'Content-Type': 'application/json',
-        'apikey': _anonKey, // Kunci dari .env
+        'apikey': ?_anonKey, // Kunci dari .env
         'Authorization': 'Bearer $_anonKey', // Kunci dari .env
         'Prefer': 'return=minimal', 
       },
@@ -45,7 +45,7 @@ class ThoughtApiService {
       uri,
       headers: {
         'Content-Type': 'application/json',
-        'apikey': _anonKey, // Kunci dari .env
+        'apikey': ?_anonKey, // Kunci dari .env
         'Authorization': 'Bearer $_anonKey', 
       },
     );
