@@ -8,11 +8,7 @@ Selain melacak kebiasaan pribadi, MaHabits juga memiliki fitur unik "Pesan Globa
 
 | Halaman Utama (Progress) | Halaman Utama (Selesai) | Halaman Tambah/Edit | Halaman Pesan Global |
 | :---: | :---: | :---: | :---: |
-| ![Halaman Utama (Progress)](https://github.com/FarellAlva/Image-Hosting/blob/main/Screenshot%202025-10-31%20132132.png) | ![Halaman Utama (Selesai)](https://github.com/FarellAlva/Image-Hosting/blob/main/Screenshot%202025-10-31%20132148.png) | http://googleusercontent.com/image_generation_content/0
-
- | http://googleusercontent.com/image_generation_content/1
-
- |
+| ![Halaman Utama (Progress)](https://github.com/FarellAlva/Image-Hosting/blob/main/Screenshot%202025-10-31%20132132.png) | ![Halaman Utama (Selesai)](https://github.com/
 
 ## ✨ Fitur Utama
 
