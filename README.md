@@ -1,4 +1,4 @@
-MaHabits - Pelacak Kebiasaan Sederhana
+# MaHabits - Pelacak Kebiasaan Sederhana
 
 MaHabits adalah aplikasi pelacak kebiasaan (habit tracker) minimalis yang dibangun dengan Flutter. Aplikasi ini dirancang untuk membantu Anda membangun rutinitas harian secara konsisten dengan antarmuka yang bersih dan fokus.
 
@@ -8,7 +8,11 @@ Selain melacak kebiasaan pribadi, MaHabits juga memiliki fitur unik "Pesan Globa
 
 | Halaman Utama (Progress) | Halaman Utama (Selesai) | Halaman Tambah/Edit | Halaman Pesan Global |
 | :---: | :---: | :---: | :---: |
-|  |  |  |  |
+| ![Halaman Utama (Progress)](https://github.com/FarellAlva/Image-Hosting/blob/main/Screenshot%202025-10-31%20132132.png) | ![Halaman Utama (Selesai)](https://github.com/FarellAlva/Image-Hosting/blob/main/Screenshot%202025-10-31%20132148.png) | http://googleusercontent.com/image_generation_content/0
+
+ | http://googleusercontent.com/image_generation_content/1
+
+ |
 
 ## ✨ Fitur Utama
 
@@ -18,7 +22,7 @@ Selain melacak kebiasaan pribadi, MaHabits juga memiliki fitur unik "Pesan Globa
 * **Pesan Global (Online):**
     * Bagikan pemikiran/pesan unik Anda hari ini ke papan pesan global.
     * Lihat riwayat pesan dari semua pengguna, diurutkan dari yang terbaru.
-* **Kustomisasi Sederhana:** Judul aplikasi dapat diubah (disimpan di **SharedPreferences**).
+
 
 ## 🚀 Teknologi yang Digunakan
 
